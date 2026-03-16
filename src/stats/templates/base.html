@@ -30,8 +30,7 @@
 
     <title>{% block title %}{{ server_name.title }} (IL2 stats){% endblock title %}</title>
 
-    <link href='//fonts.googleapis.com/css?family=Cookie|Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800&amp;subset=latin,latin-ext,cyrillic,cyrillic-ext' rel='stylesheet' type='text/css'>
-
+    <link href="{% static 'css/fonts.css' %}" rel="stylesheet">
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
     <link href="{% static 'css/footer_coffee.css' %}" rel="stylesheet">
     <script>
@@ -43,15 +42,6 @@
 </head>
 
 <body>
-<noscript>
-    <div id="enable_javascript">
-        {% blocktrans trimmed %}
-            For full functionality of this site it is necessary to enable JavaScript.
-            Here are the <a href="//www.enable-javascript.com" target="_blank">
-            instructions how to enable JavaScript in your web browser</a>.
-        {% endblocktrans %}
-    </div>
-</noscript>
 
 <header>
     <div class="wrapper">
@@ -134,15 +124,9 @@
     <div class="footer">
         <div class="wrapper">
             <div class="footer_il2_stats_logo">
-                {% if LANGUAGE_CODE == 'ru' %}
-                    <a href="https://forum.il2sturmovik.ru/topic/3548-il2-stats" target="_blank">
-                        <img src="{% static 'img/il2_stats_logo_sm.png' %}" width="53" height="36" alt="" title="">
-                    </a>
-                {% else %}
-                    <a href="https://forum.il2sturmovik.com/topic/19083-il2-stats" target="_blank">
-                        <img src="{% static 'img/il2_stats_logo_sm.png' %}" width="53" height="36" alt="" title="">
-                    </a>
-                {% endif %}
+                <a href="https://github.com/vaal-/il2_stats" target="_blank">
+                    <img src="{% static 'img/il2_stats_logo_sm.png' %}" width="53" height="36" alt="" title="">
+                </a>
             </div>
             <div class="footer_left">
                 {% now 'Y' as current_year %}
@@ -198,14 +182,14 @@
                 </div>
             </div>
             <div class="footer_coffee">
-                {% include 'inline/buy_me_coffee.html' %}
+{#                {% include 'inline/buy_me_coffee.html' %}#}
             </div>
         </div>
     </div>
 </footer>
 
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/URI.js/1.16.0/URI.min.js"></script>
+<script src="{% static 'js/jquery.min.js' %}"></script>
+<script src="{% static 'js/URI.min.js' %}"></script>
 {#<script src="{% static 'js/bootstrap.min.js' %}"></script>#}
 <script src="{% static 'js/common.js' %}"></script>
 <script src="{% static 'js/paginator3000.js' %}"></script>
@@ -214,31 +198,6 @@
 {% block bottom %}{% endblock bottom %}
 
 <!-- Yandex.Metrika counter --><script type="text/javascript"> (function (d, w, c) { (w[c] = w[c] || []).push(function() { try { w.yaCounter32171674 = new Ya.Metrika({ id:32171674, clickmap:true, trackLinks:true, accurateTrackBounce:true, webvisor:true, trackHash:true }); } catch(e) { } }); var n = d.getElementsByTagName("script")[0], s = d.createElement("script"), f = function () { n.parentNode.insertBefore(s, n); }; s.type = "text/javascript"; s.async = true; s.src = "https://mc.yandex.ru/metrika/watch.js"; if (w.opera == "[object Opera]") { d.addEventListener("DOMContentLoaded", f, false); } else { f(); } })(document, window, "yandex_metrika_callbacks");</script><noscript><div><img src="https://mc.yandex.ru/watch/32171674" style="position:absolute; left:-9999px;" alt="" /></div></noscript><!-- /Yandex.Metrika counter -->
-
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-X96N99YB0F"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-X96N99YB0F');
-</script>
-
-<script>
-    var $buoop = {c: 2};
-    function $buo_f() {
-        var e = document.createElement("script");
-        e.src = "//browser-update.org/update.min.js";
-        document.body.appendChild(e);
-    };
-    try {
-        document.addEventListener("DOMContentLoaded", $buo_f, false)
-    }
-    catch (e) {
-        window.attachEvent("onload", $buo_f)
-    }
-</script>
 
 </body>
 </html>

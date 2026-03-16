@@ -87,7 +87,7 @@
 
 {% block bottom %}
     {{ block.super }}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.5.8/clipboard.min.js"></script>
+    <script src="{% static 'js/clipboard.min.js' %}"></script>
 
     <form id="form_squad" action="" method="post" onsubmit="this.submit.disabled=true;">
         {% csrf_token %}
