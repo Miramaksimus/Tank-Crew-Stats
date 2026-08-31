@@ -18,6 +18,12 @@ all **migrated from Django 1.11.29 to Django 5.2 LTS** and running on Python 3.1
 > (`mod_rating_by_type` and `mod_stats_by_aircraft`) and are enabled/disabled
 > purely through `conf.ini`.
 
+> 🐳 **Dockerized:** this distribution ships with a ready-to-use Docker setup
+> (`Dockerfile` + `docker-compose.yml`). You can bring up the database, web
+> server and log parser with a single `docker compose up` — no local Python,
+> PostgreSQL or virtualenv required. See
+> [Installation → Docker](#docker-recommended-any-os).
+
 ---
 
 ## Table of contents
@@ -26,6 +32,9 @@ all **migrated from Django 1.11.29 to Django 5.2 LTS** and running on Python 3.1
 - [What's included](#whats-included)
 - [Requirements](#requirements)
 - [Installation](#installation)
+  - [Docker (recommended, any OS)](#docker-recommended-any-os)
+  - [Windows (scripted)](#windows-scripted)
+  - [Manual installation (any OS)](#manual-installation-any-os)
 - [Configuration (`conf.ini`)](#configuration-confini)
   - [Enabling the mods](#enabling-the-mods)
   - [Stats Enhancements modules](#stats-enhancements-modules)
@@ -51,6 +60,7 @@ all **migrated from Django 1.11.29 to Django 5.2 LTS** and running on Python 3.1
 | Static files     | WhiteNoise                                 |
 | App server       | Waitress                                   |
 | Translations     | django-modeltranslation + django-rosetta   |
+| Containerization | Docker + Docker Compose (optional)         |
 
 > **Important:** IL-2 Stats collects statistics with its own algorithms, which
 > differ from the in-game statistics. As a consequence, these numbers will not
@@ -76,7 +86,12 @@ all **migrated from Django 1.11.29 to Django 5.2 LTS** and running on Python 3.1
 
 ## Requirements
 
-Before installing, make sure you have:
+> 🐳 Using **Docker**? Skip this whole section — the containers bundle Python and
+> PostgreSQL, and the required extensions are created automatically. Jump to
+> [Installation → Docker](#docker-recommended-any-os). You only need
+> mission-text logging enabled on the game server (see the last step below).
+
+Before installing **without Docker**, make sure you have:
 
 1. **Python 3.11 or 3.12**
 2. **PostgreSQL 10.0 or newer**
@@ -103,38 +118,117 @@ text_log_folder = "logs\txt\"
 
 ### Docker (recommended, any OS)
 
-The repository ships with a full Docker setup (`Dockerfile`, `docker-compose.yml`,
-`docker/`). It runs PostgreSQL (with the required `hstore`/`citext` extensions),
-applies migrations, collects static files, imports the game-object CSVs and
-starts the Waitress web server automatically.
+The repository ships with a full Docker setup that runs the whole stack in
+containers — **you don't need Python, PostgreSQL or a virtualenv on the host**,
+only Docker.
+
+| File                        | Purpose                                                        |
+|-----------------------------|----------------------------------------------------------------|
+| `Dockerfile`                | Application image (Python 3.12 + dependencies + source).       |
+| `docker-compose.yml`        | Services: `db` (PostgreSQL), `web` (Waitress), `parser`.       |
+| `docker/entrypoint.sh`      | Waits for the DB, runs migrations, `collectstatic`, CSV import, optional superuser. |
+| `docker/conf.ini`           | Container application config (DB host = `db`, binds `0.0.0.0`).|
+| `docker/postgres-init.sql`  | Creates the required `hstore` / `citext` extensions.           |
+| `.env.example`              | Template for environment variables.                            |
+
+#### Prerequisites
+
+- **Docker Engine 20.10+** and **Docker Compose v2** (`docker compose ...`).
+- That's it — no local Python or PostgreSQL needed.
+
+#### 1. Configure the environment
+
+Copy the template and edit it:
 
 ```bash
-cp .env.example .env          # then edit .env (set SECRET_KEY, admin password, ...)
+cp .env.example .env
+```
+
+`.env` variables:
+
+| Variable                    | Meaning                                                            |
+|-----------------------------|--------------------------------------------------------------------|
+| `DB_NAME` / `DB_USER` / `DB_PASSWORD` | PostgreSQL database name and credentials.                |
+| `HTTP_PORT`                 | Host port the site is published on (container listens on `8077`).   |
+| `SECRET_KEY`                | Stable Django secret key so sessions survive restarts. Generate one with `python -c "import secrets; print(secrets.token_urlsafe(50))"`. |
+| `DJANGO_SUPERUSER_USERNAME` / `DJANGO_SUPERUSER_PASSWORD` / `DJANGO_SUPERUSER_EMAIL` | Auto-create an admin user on first start (leave blank to skip). |
+| `IL2_SERVER_PATH`           | Path to your IL-2 dedicated server folder (the one containing `data/`). Used only by the parser. |
+
+Application-level settings (mods, scoring, stats options) live in
+**`docker/conf.ini`** — it already points the database at the `db` service and
+binds the web server to `0.0.0.0`. Edit that file the same way you would edit
+`src/conf.ini`, then rebuild.
+
+#### 2. Start the web + database
+
+```bash
 docker compose up -d --build
 ```
 
-The site is then available at <http://localhost:8077> (change the published port
-with `HTTP_PORT` in `.env`). An admin user is created automatically from the
-`DJANGO_SUPERUSER_*` values in `.env`.
+The entrypoint automatically applies migrations, collects static files, imports
+the game-object CSVs and (if configured) creates the admin user. The site is
+then available at <http://localhost:8077> (or your `HTTP_PORT`); the admin panel
+is at `/admin/`.
 
-Docker-specific application settings live in `docker/conf.ini` (it points the
-database host at the `db` service and binds the server to `0.0.0.0`). Edit that
-file for mods/scoring/stats options, then rebuild (`docker compose up -d --build`).
+#### 3. Collect statistics (mission-log parser)
 
-**Mission-log parser (optional).** To process your server's mission logs, point
-`IL2_SERVER_PATH` in `.env` at your IL-2 dedicated server folder (the one
-containing `data/`) and start the parser profile:
+The `web` service only **displays** data; the **`parser`** service is what reads
+your server's mission logs and fills the database. Point `IL2_SERVER_PATH` in
+`.env` at your IL-2 dedicated server folder, then start the parser profile:
 
 ```bash
 docker compose --profile parser up -d
 ```
 
-Useful commands:
+The parser runs in a loop: every new mission your server writes is processed
+automatically and shows up on the site.
+
+> ⚠️ The server folder is mounted **read-write** on purpose — the parser moves
+> processed logs into `data/<text_log_folder>/mission_report_backup/`.
+
+> ℹ️ **Empty pilot ranking?** Two things are normal, not bugs:
+> 1. The site defaults to the most recent **tour** — pick the right one in the
+>    top selector (or `?tour=<id>`).
+> 2. `inactive_player_days` hides pilots with no recent activity, so **old test
+>    logs** won't appear in the ranking. With a live server producing fresh logs,
+>    pilots show up automatically.
+
+#### Data persistence
+
+All state lives in **named Docker volumes**, independent of the containers:
+
+| Volume                | Contents                                             |
+|-----------------------|------------------------------------------------------|
+| `il2_stats_pgdata`    | The entire PostgreSQL database.                      |
+| `il2_stats_static`    | Collected static files.                              |
+| `il2_stats_media`     | Uploaded media.                                      |
+
+Removing or rebuilding containers does **not** touch these volumes:
+
+| Command                          | Containers | Data (volumes)     |
+|----------------------------------|------------|--------------------|
+| `docker compose stop` / `down`   | removed    | ✅ kept             |
+| `docker compose up --build`      | recreated  | ✅ kept             |
+| `docker compose down -v`         | removed    | ❌ **deleted**      |
+
+Only `down -v` (or deleting a volume manually) destroys the database.
+
+Back up / restore the database:
 
 ```bash
-docker compose logs -f web        # follow web logs
-docker compose down               # stop (keeps the database volume)
-docker compose down -v            # stop and delete all data
+docker compose exec db pg_dump -U il2_stats il2_stats > backup.sql        # backup
+docker compose exec -T db psql -U il2_stats il2_stats < backup.sql        # restore
+```
+
+#### Common commands
+
+```bash
+docker compose logs -f web              # follow web logs
+docker compose logs -f parser           # follow parser (log processing)
+docker compose ps                       # container status
+docker compose up -d --build            # apply code/config/conf.ini changes
+docker compose down                      # stop (keeps data)
+docker compose --profile parser down    # stop including the parser
 ```
 
 ### Windows (scripted)
@@ -294,6 +388,12 @@ retro_compute_for_last_tours = 10
 
 ## Running
 
+### Docker
+
+- `docker compose up -d` — start the web server (and database).
+- `docker compose --profile parser up -d` — additionally start the mission-log
+  parser. See [Installation → Docker](#docker-recommended-any-os).
+
 ### Windows
 
 - `run\stats.cmd` — start the mission-log parser (processes reports, then waits
@@ -317,6 +417,9 @@ The server name shown on the site is changed in the admin panel under **Chunks**
 To update the codebase and dependencies, run `run\update.cmd`
 (Windows) / `run/update.sh` (Linux/Mac) from a **clean shell**.
 
+> 🐳 **With Docker**, update by rebuilding the image: `docker compose up -d --build`
+> (migrations run automatically on start).
+
 Some changes (new game objects, turret→aircraft mappings, or scoring logic)
 only affect **newly processed** reports. To re-apply them to already-processed
 missions, do a clean reprocess (the raw server logs are re-parsed automatically):
@@ -328,6 +431,14 @@ python manage.py import_csv_data          # re-populate game objects/scores
 python manage.py createsuperuser          # recreate the admin user
 # then run stats.cmd to reprocess the reports
 ```
+
+> 🐳 **With Docker**, the same reprocess is:
+> ```bash
+> docker compose exec web python manage.py flush --noinput
+> docker compose exec web python manage.py import_csv_data
+> docker compose exec web python manage.py createsuperuser
+> docker compose --profile parser restart parser   # reprocess the reports
+> ```
 
 ---
 
