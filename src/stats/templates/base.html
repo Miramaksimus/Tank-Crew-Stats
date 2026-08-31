@@ -74,6 +74,7 @@
                 {% trans 'Rankings' %} &#x25BE;
                 <div class="nav_sub_menu_items">
                     <a href="{% url 'stats:pilots' %}?tour={{ request.tour.id }}">{% trans 'Pilot Rankings' %}</a>
+                    <a href="{% url 'stats:tankmans' %}?tour={{ request.tour.id }}">{% trans 'Tankman Rankings' %}</a>
                     <a href="{% url 'stats:squads' %}?tour={{ request.tour.id }}">{% trans 'Squad Rankings' %}</a>
                 </div>
             </div>

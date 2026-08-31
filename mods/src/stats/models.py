@@ -2,13 +2,13 @@ from calendar import monthrange
 import hashlib
 
 from django.conf import settings
-from django.contrib.postgres.fields import ArrayField, JSONField
+from django.contrib.postgres.fields import ArrayField
 from django.templatetags.static import static
 from django.db import connection, models
 from django.db.models import Avg, Count, Sum, BigIntegerField, Q
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _, pgettext_lazy
+from django.utils.translation import gettext_lazy as _, pgettext_lazy
 
 from mission_report.constants import Coalition, Country
 from mission_report.statuses import BotLifeStatus, SortieStatus, LifeStatus, VLifeStatus
@@ -191,8 +191,11 @@ class Tour(models.Model):
     def save(self, *args, **kwargs):
         if self.is_ended and not self.date_end:
             self.date_end = timezone.now()
-        self.update_winning_coalition()
+        is_new = not self.pk
         super().save(*args, **kwargs)
+        if is_new:
+            self.update_winning_coalition()
+            super().save(update_fields=['winning_coalition'])
 
     def update_winning_coalition(self):
         wins = self.missions_wins()
@@ -324,7 +327,7 @@ class Mission(models.Model):
     is_correctly_completed = models.BooleanField(default=False)
 
     # стоимость объектов и т.п. на момент завершения миссии
-    score_dict = JSONField(default=dict)
+    score_dict = models.JSONField(default=dict)
 
     is_hide = models.BooleanField(default=False, db_index=True)
 
@@ -415,7 +418,7 @@ class Player(models.Model):
 
     sorties_total = models.IntegerField(default=0)
     sorties_coal = ArrayField(models.IntegerField(default=0), default=default_coal_list)
-    sorties_cls = JSONField(default=default_sorties_cls)
+    sorties_cls = models.JSONField(default=default_sorties_cls)
 
     COALITIONS = (
         (Coalition.neutral, pgettext_lazy('coalition', _('neutral'))),
@@ -428,7 +431,7 @@ class Player(models.Model):
     # налет в секундах?
     flight_time = models.BigIntegerField(default=0, db_index=True)
 
-    ammo = JSONField(default=default_ammo)
+    ammo = models.JSONField(default=default_ammo)
     accuracy = models.FloatField(default=0, db_index=True)
 
     streak_current = models.IntegerField(default=0, db_index=True)
@@ -473,8 +476,8 @@ class Player(models.Model):
     fak_total = models.IntegerField(default=0)
     fgk_total = models.IntegerField(default=0)
 
-    killboard_pvp = JSONField(default=dict)
-    killboard_pve = JSONField(default=dict)
+    killboard_pvp = models.JSONField(default=dict)
+    killboard_pve = models.JSONField(default=dict)
 
     ce = models.FloatField(default=0)
     kd = models.FloatField(default=0, db_index=True)
@@ -704,7 +707,7 @@ class PlayerMission(models.Model):
     # налет в секундах?
     flight_time = models.BigIntegerField(default=0, db_index=True)
 
-    ammo = JSONField(default=default_ammo)
+    ammo = models.JSONField(default=default_ammo)
     accuracy = models.FloatField(default=0, db_index=True)
 
     bailout = models.IntegerField(default=0)
@@ -729,8 +732,8 @@ class PlayerMission(models.Model):
     fak_total = models.IntegerField(default=0)
     fgk_total = models.IntegerField(default=0)
 
-    killboard_pvp = JSONField(default=dict)
-    killboard_pve = JSONField(default=dict)
+    killboard_pvp = models.JSONField(default=dict)
+    killboard_pve = models.JSONField(default=dict)
 
     ce = models.FloatField(default=0)
     kd = models.FloatField(default=0, db_index=True)
@@ -834,7 +837,7 @@ class PlayerAircraft(models.Model):
     sorties_total = models.IntegerField(default=0)
     flight_time = models.BigIntegerField(default=0)
 
-    ammo = JSONField(default=default_ammo)
+    ammo = models.JSONField(default=default_ammo)
     accuracy = models.FloatField(default=0)
 
     bailout = models.IntegerField(default=0)
@@ -859,8 +862,8 @@ class PlayerAircraft(models.Model):
     fak_total = models.IntegerField(default=0)
     fgk_total = models.IntegerField(default=0)
 
-    killboard_pvp = JSONField(default=dict)
-    killboard_pve = JSONField(default=dict)
+    killboard_pvp = models.JSONField(default=dict)
+    killboard_pve = models.JSONField(default=dict)
 
     ce = models.FloatField(default=0)
     kd = models.FloatField(default=0)
@@ -936,7 +939,7 @@ class VLife(models.Model):
 
     sorties_total = models.IntegerField(default=0, db_index=True)
     sorties_coal = ArrayField(models.IntegerField(default=0), default=default_coal_list)
-    sorties_cls = JSONField(default=default_sorties_cls)
+    sorties_cls = models.JSONField(default=default_sorties_cls)
 
     COALITIONS = (
         (Coalition.neutral, pgettext_lazy('coalition', _('neutral'))),
@@ -948,7 +951,7 @@ class VLife(models.Model):
 
     flight_time = models.BigIntegerField(default=0, db_index=True)
 
-    ammo = JSONField(default=default_ammo)
+    ammo = models.JSONField(default=default_ammo)
     accuracy = models.FloatField(default=0, db_index=True)
 
     bailout = models.IntegerField(default=0)
@@ -973,8 +976,8 @@ class VLife(models.Model):
     fak_total = models.IntegerField(default=0)
     fgk_total = models.IntegerField(default=0)
 
-    killboard_pvp = JSONField(default=dict)
-    killboard_pve = JSONField(default=dict)
+    killboard_pvp = models.JSONField(default=dict)
+    killboard_pve = models.JSONField(default=dict)
 
     STATUS = (
         (SortieStatus.landed, pgettext_lazy('sortie_status', 'landed')),
@@ -1151,7 +1154,7 @@ class Sortie(models.Model):
     payload_id = models.IntegerField(default=0)
     weapon_mods_id = ArrayField(models.IntegerField(), default=list)
 
-    ammo = JSONField(default=default_ammo)
+    ammo = models.JSONField(default=default_ammo)
 
     COALITIONS = (
         (Coalition.neutral, pgettext_lazy('coalition', _('neutral'))),
@@ -1185,8 +1188,8 @@ class Sortie(models.Model):
     fak_total = models.IntegerField(default=0)
     fgk_total = models.IntegerField(default=0)
 
-    killboard_pvp = JSONField(default=dict)
-    killboard_pve = JSONField(default=dict)
+    killboard_pvp = models.JSONField(default=dict)
+    killboard_pve = models.JSONField(default=dict)
 
     STATUS = (
         (SortieStatus.landed, pgettext_lazy('sortie_status', 'landed')),
@@ -1222,14 +1225,14 @@ class Sortie(models.Model):
 
     ratio = models.FloatField(default=1)
     score = models.IntegerField(default=0)
-    score_dict = JSONField(default=dict)
+    score_dict = models.JSONField(default=dict)
     damage = models.FloatField(default=0)
     wound = models.FloatField(default=0)
 
     fairplay = models.IntegerField(default=100)
-    bonus = JSONField(default=dict)
+    bonus = models.JSONField(default=dict)
 
-    debug = JSONField(default=dict)
+    debug = models.JSONField(default=dict)
     is_ignored = models.BooleanField(default=False)
 
     class Meta:
@@ -1373,7 +1376,7 @@ class LogEntry(models.Model):
     date = models.DateTimeField()
     tik = models.IntegerField(db_index=True)
     type = models.CharField(max_length=16, choices=TYPES, db_index=True)
-    extra_data = JSONField(default=dict)
+    extra_data = models.JSONField(default=dict)
 
     class Meta:
         db_table = 'log_entries'
@@ -1395,7 +1398,7 @@ class Squad(models.Model):
 
     sorties_total = models.IntegerField(default=0)
     sorties_coal = ArrayField(models.IntegerField(default=0), default=default_coal_list)
-    sorties_cls = JSONField(default=default_sorties_cls)
+    sorties_cls = models.JSONField(default=default_sorties_cls)
 
     COALITIONS = (
         (Coalition.neutral, pgettext_lazy('coalition', _('neutral'))),

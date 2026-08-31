@@ -33,6 +33,8 @@ DEFAULT = {
         'win_score_min': 2000,
         'win_score_ratio': 1.5,
         'sortie_min_time': 0,
+        'sortie_disco_min_time': 0,
+        'sortie_damage_disco_time': 120,
         'skin_id': 1,
         'mods': '',
     },
@@ -58,7 +60,7 @@ def get_conf():
     except FileNotFoundError:
         # If conf.ini doesn't exist, use defaults
         pass
-    
+
     try:
         game_path = Path(conf['game_server']['path'])
         startup_path = game_path.joinpath('data', 'startup.cfg')
@@ -71,7 +73,7 @@ def get_conf():
     except (FileNotFoundError, KeyError, OSError):
         # If startup.cfg doesn't exist, use default
         pass
-    
+
     return conf
 
 conf = get_conf()
@@ -114,6 +116,8 @@ WIN_BY_SCORE = conf['stats'].getboolean('win_by_score')
 WIN_SCORE_MIN = conf['stats'].getint('win_score_min')
 WIN_SCORE_RATIO = conf['stats'].getfloat('win_score_ratio')
 SORTIE_MIN_TIME = conf['stats'].getint('sortie_min_time')
+SORTIE_DISCO_MIN_TIME = conf['stats'].getint('sortie_disco_min_time')
+SORTIE_DAMAGE_DISCO_TIME = conf['stats'].getint('sortie_damage_disco_time')
 SKIN_ID = conf['stats'].getint('skin_id')
 
 SEND_EMAIL = conf['email'].getboolean('send_email')

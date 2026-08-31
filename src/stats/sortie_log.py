@@ -25,6 +25,7 @@ messages_wo_opponent = {
     'act': {
         'respawn': pgettext_lazy('sortie_log', 'respawn'),
         'end': pgettext_lazy('sortie_log', 'end'),
+        'disco': pgettext_lazy('sortie_log', 'DISCONNECTED'),
         'takeoff': pgettext_lazy('sortie_log', 'takeoff'),
         'landed': pgettext_lazy('sortie_log', 'landed'),
         'crashed': pgettext_lazy('sortie_log', 'crashed'),
@@ -53,6 +54,7 @@ colors = {
     'act': {
         'respawn': 'grey',
         'end': 'grey',
+        'disco': 'grey',
         'takeoff': 'grey',
         'landed': 'green',
         'crashed': 'orange',

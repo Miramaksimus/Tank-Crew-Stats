@@ -1,6 +1,19 @@
 The MIT License (MIT)
 
-Copyright (c) 2015 IL2 stats team
+IL-2 Tank Crew Stats — Django 5.2 LTS Edition
+A merged and modernized distribution of IL-2 Stats and its community mod bundle.
+
+Copyright (c) 2015 IL2 stats team (=FB=Vaal, =FB=Isay)          — IL-2 Stats core
+Copyright (c) CountZero                                          — Tank mod, Disconnect mod
+Copyright (c) =FEW=Revolves, Enigma89                           — Split Rankings / Stats
+                                                                  Enhancements, Global
+                                                                  Aircraft Stats, bundle
+Copyright (c) 2026 Tank-Crew-Stats maintainers                  — Django 5.2 LTS migration
+                                                                  and merge
+
+All portions of this software (the original IL-2 Stats core and the merged mods)
+are licensed under the MIT License and retain the copyright of their respective
+authors listed above.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
