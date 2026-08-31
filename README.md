@@ -101,6 +101,42 @@ text_log_folder = "logs\txt\"
 
 ## Installation
 
+### Docker (recommended, any OS)
+
+The repository ships with a full Docker setup (`Dockerfile`, `docker-compose.yml`,
+`docker/`). It runs PostgreSQL (with the required `hstore`/`citext` extensions),
+applies migrations, collects static files, imports the game-object CSVs and
+starts the Waitress web server automatically.
+
+```bash
+cp .env.example .env          # then edit .env (set SECRET_KEY, admin password, ...)
+docker compose up -d --build
+```
+
+The site is then available at <http://localhost:8077> (change the published port
+with `HTTP_PORT` in `.env`). An admin user is created automatically from the
+`DJANGO_SUPERUSER_*` values in `.env`.
+
+Docker-specific application settings live in `docker/conf.ini` (it points the
+database host at the `db` service and binds the server to `0.0.0.0`). Edit that
+file for mods/scoring/stats options, then rebuild (`docker compose up -d --build`).
+
+**Mission-log parser (optional).** To process your server's mission logs, point
+`IL2_SERVER_PATH` in `.env` at your IL-2 dedicated server folder (the one
+containing `data/`) and start the parser profile:
+
+```bash
+docker compose --profile parser up -d
+```
+
+Useful commands:
+
+```bash
+docker compose logs -f web        # follow web logs
+docker compose down               # stop (keeps the database volume)
+docker compose down -v            # stop and delete all data
+```
+
 ### Windows (scripted)
 
 1. Open a **clean shell** (system Python — *not* an already-activated virtualenv).

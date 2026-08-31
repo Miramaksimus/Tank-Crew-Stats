@@ -1,0 +1,76 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-il2_stats}
+      POSTGRES_USER: ${DB_USER:-il2_stats}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-il2_stats}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/10-extensions.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-il2_stats} -d ${DB_NAME:-il2_stats}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-il2_stats}
+      DB_USER: ${DB_USER:-il2_stats}
+      DB_PASSWORD: ${DB_PASSWORD:-il2_stats}
+      SECRET_KEY: ${SECRET_KEY:-}
+      RUN_SETUP: "1"
+      DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME:-}
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD:-}
+      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL:-admin@example.com}
+    ports:
+      - "${HTTP_PORT:-8077}:8077"
+    volumes:
+      - static:/app/static
+      - media:/app/media
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8077/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # Optional: mission-log parser. It reads the IL-2 dedicated server logs and
+  # writes stats into the same database. Mount your server directory below.
+  # Start it with:  docker compose --profile parser up -d
+  parser:
+    build: .
+    restart: unless-stopped
+    profiles: ["parser"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-il2_stats}
+      DB_USER: ${DB_USER:-il2_stats}
+      DB_PASSWORD: ${DB_PASSWORD:-il2_stats}
+      SECRET_KEY: ${SECRET_KEY:-}
+      RUN_SETUP: "0"
+    command: ["python", "manage.py", "stats_whore"]
+    volumes:
+      - media:/app/media
+      # Mount your IL-2 dedicated server folder (contains data/<text_log_folder>).
+      # Must be read-write: the parser moves processed logs into
+      # data/<text_log_folder>/mission_report_backup/.
+      - ${IL2_SERVER_PATH:-./il2server}:/il2server
+
+volumes:
+  pgdata:
+  static:
+  media:
