@@ -2,7 +2,7 @@ from django.core.exceptions import FieldError
 from django.db import ProgrammingError
 from stats.models import Tour, Sortie
 from django.db.models import Max
-from psycopg2 import OperationalError
+from django.db import OperationalError
 import config
 
 RETRO_COMPUTE_FOR_LAST_TOURS = config.get_conf()['stats'].getint('retro_compute_for_last_tours')
