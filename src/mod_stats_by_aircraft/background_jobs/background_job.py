@@ -2,6 +2,7 @@ from django.core.exceptions import FieldError
 from django.db import ProgrammingError
 from stats.models import Tour, Sortie
 from django.db.models import Max
+from psycopg2 import OperationalError
 import config
 
 RETRO_COMPUTE_FOR_LAST_TOURS = config.get_conf()['stats'].getint('retro_compute_for_last_tours')
@@ -28,6 +29,8 @@ class BackgroundJob:
             pass  # Likely that update.cmd is running. Otherwise this will cause another error later on.
         except ProgrammingError:
             pass  # Likely that update.cmd is running. Otherwise this will cause another error later on.
+        except OperationalError:  # Add this line
+            pass  # Database not available during tests
 
         self.unlimited_work = False  # Marker for a continuous job which always gets extra work.
 
