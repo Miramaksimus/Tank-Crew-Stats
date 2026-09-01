@@ -2,12 +2,14 @@ from collections import defaultdict
 from itertools import count
 import logging
 import operator
+from django.conf import settings
 
 from mission_report.constants import COALITION_ALIAS
 from mission_report.statuses import BotLifeStatus, SortieStatus, LifeStatus
 from mission_report.helpers import distance, point_in_polygon, is_pos_correct
 from mission_report import parse_mission_log_line
 
+SORTIE_DAMAGE_DISCO_TIME = settings.SORTIE_DAMAGE_DISCO_TIME
 
 logger = logging.getLogger('mission_report')
 
@@ -255,6 +257,13 @@ class MissionReport:
             if target.sortie and not target.is_crew() and target.sortie.is_ended:
                 return
             target.got_damaged(damage=damage, attacker=attacker, pos=pos)
+            # получить время об последний урон для диско - get time of last damage done to airplane when sortie is disco
+            if target.sortie:
+                if target.cls_base == 'aircraft':
+                    target.sortie.tik_lastdamage = tik
+                if (target.cls_base == 'tank' or target.cls_base == 'vehicle' or target.cls_base == 'turret'):
+                    if (attacker != None):
+                        target.sortie.tik_lastdamage = tik
 
     def event_kill(self, tik, attacker_id, target_id, pos):
         attacker = self.get_object(object_id=attacker_id)
@@ -312,29 +321,35 @@ class MissionReport:
                      coal_id, airfield_id, airstart, parent_id, payload_id, fuel, skin, weapon_mods_id,
                      cartridges, shells, bombs, rockets, form, is_player, is_tracking_stat):
         # игнорируем записи про ботов
-        if is_player:
-            sortie = Sortie(mission=self, tik=tik, aircraft_id=aircraft_id, bot_id=bot_id, account_id=account_id,
-                            profile_id=profile_id, name=name, pos=pos, aircraft_name=aircraft_name, country_id=country_id,
-                            coal_id=coal_id, airfield_id=airfield_id, airstart=airstart, parent_id=parent_id,
-                            payload_id=payload_id, fuel=fuel, skin=skin, weapon_mods_id=weapon_mods_id,
-                            cartridges=cartridges, shells=shells, bombs=bombs, rockets=rockets)
+        sortie = Sortie(mission=self, tik=tik, aircraft_id=aircraft_id, bot_id=bot_id, account_id=account_id,
+                        profile_id=profile_id, name=name, pos=pos, aircraft_name=aircraft_name, country_id=country_id,
+                        coal_id=coal_id, airfield_id=airfield_id, airstart=airstart, parent_id=parent_id,
+                        payload_id=payload_id, fuel=fuel, skin=skin, weapon_mods_id=weapon_mods_id,
+                        cartridges=cartridges, shells=shells, bombs=bombs, rockets=rockets)
 
-            self.add_active_sortie(sortie=sortie)
-            self.sorties.append(sortie)
-            self.sorties_aircraft[sortie.aircraft_id] = sortie
-            self.sorties_bots[sortie.bot_id] = sortie
-            self.sorties_accounts[sortie.account_id] = sortie
+        self.add_active_sortie(sortie=sortie)
+        self.sorties.append(sortie)
+        self.sorties_aircraft[sortie.aircraft_id] = sortie
+        self.sorties_bots[sortie.bot_id] = sortie
+        self.sorties_accounts[sortie.account_id] = sortie
 
-            current_ratio = self.get_current_ratio(sortie_coal_id=sortie.coal_id)
-            sortie.update_ratio(current_ratio=current_ratio)
-            self.logger_event({'type': 'respawn', 'sortie': sortie, 'pos': pos})
+        current_ratio = self.get_current_ratio(sortie_coal_id=sortie.coal_id)
+        sortie.update_ratio(current_ratio=current_ratio)
+        self.logger_event({'type': 'respawn', 'sortie': sortie, 'pos': pos})
 
     def event_group(self, tik, group_id, members_id, leader_id):
         pass
 
     def event_game_object(self, tik, object_id, object_name, country_id, coal_id, name, parent_id):
-        obj = Object(mission=self, object_id=object_id, object_name=object_name,
-                     country_id=country_id, coal_id=coal_id, parent_id=parent_id)
+        try:
+            obj = Object(mission=self, object_id=object_id, object_name=object_name,
+                         country_id=country_id, coal_id=coal_id, parent_id=parent_id)
+        except KeyError:
+            # объект отсутствует в objects.csv (устаревшая/неполная база объектов) -
+            # пропускаем это событие вместо падения всей обработки отчета
+            logger.warning('unknown game object "%s" (id=%s) is missing from objects.csv, skipping',
+                            object_name, object_id)
+            return
         self.objects_id_map[object_id] = obj
 
     def event_influence_area(self, tik, area_id, country_id, coal_id, enabled, in_air):
@@ -361,11 +376,8 @@ class MissionReport:
         pass
 
     def event_bot_eject_leave(self, tik, bot_id, parent_id, pos):
-        parent = self.get_object(object_id=parent_id, create=False)
-        # если есть родительский объект - нужно сравнить ID бота родителя с ID прыгающего
-        # если ID не совпадают - считаем это прыжком десантника
-        if parent and parent.bot and parent.bot.id == bot_id:
-            bot = parent.bot
+        bot = self.get_object(object_id=bot_id)
+        if bot:
             bot.bot_eject_leave(tik=tik, pos=pos)
             if bot.sortie:
                 self.rm_active_sortie(sortie=bot.sortie)
@@ -382,10 +394,27 @@ class MissionReport:
         # self.online_uuid.discard(account_id)
         sortie = self.sorties_accounts.get(account_id)
         # TODO работает только в Ил2, в РОФ нет такого события
-        if sortie:
+        if sortie and not (sortie.cls in ('tank_light', 'tank_heavy', 'tank_medium', 'tank_turret', 'truck')):
+            # you can determine the amount of damage that is considered for airplanes
+            dmg_pct = 0
+            # the departure was completed, there was a jump, no plane was created, the plane on the ground, and the plane was damaged,
+            # player disconection can then be changed into captured.
+            if not (sortie.is_ended or sortie.is_bailout or (
+                    not sortie.aircraft) or sortie.aircraft.on_ground) and sortie.aircraft.damage > dmg_pct:
+                sortie.is_damageddisco = True
+                self.logger_event({'type': 'disco', 'sortie': sortie})
+                sortie.aircraft.got_killed(force_by_dmg=True)
             # вылет был завершен, был прыжок, не был создан самолет, самолет на земле
-            if not (sortie.is_ended or sortie.is_bailout or (not sortie.aircraft) or sortie.aircraft.on_ground):
+            elif not (sortie.is_ended or sortie.is_bailout or (not sortie.aircraft) or sortie.aircraft.on_ground):
                 sortie.is_disco = True
+                self.logger_event({'type': 'disco', 'sortie': sortie})
+
+        if sortie and (sortie.cls in ('tank_light', 'tank_heavy', 'tank_medium', 'tank_turret', 'truck')):
+
+            # this is for case when tank player discnects, log will record its time and event.
+            if sortie.tik_lastdamage:
+                if (sortie.tank_is_ended_by_exit(tik=tik)) and (not sortie.is_bailout):
+                    self.logger_event({'type': 'disco', 'sortie': sortie})
 
     def event_tank_travel(self, tik, tank_id, pos):
         pass
@@ -426,6 +455,13 @@ class Airfield:
         else:
             return False
 
+    # for tank/truck, if 2km from base, for rtb when bailout
+    def tank_on_airfield(self, pos):
+        if is_pos_correct(pos=self.pos) and is_pos_correct(pos=pos):
+            return distance(self.pos, pos) <= 2000
+        else:
+            return False
+
     def update(self, country_id, coal_id):
         self.country_id = country_id
         self.coal_id = coal_id
@@ -438,6 +474,7 @@ class Object:
     :type parent: Object | None
     :type children: dict[int, Object]
     """
+
     def __init__(self, mission, object_id, object_name, country_id, coal_id, parent_id):
         self.index = mission.index()
         self.mission = mission
@@ -480,6 +517,7 @@ class Object:
             self.life_status = LifeStatus()
 
         self.is_deinitialized = False
+        self.is_tank_exit_damaged = False
 
         self.is_takeoff = False
         self.is_killed = False
@@ -551,15 +589,26 @@ class Object:
             self.captured()
         if self.is_aircraft_rtb(pos=pos):
             self.is_rtb = True
+        dmg_pct_tk = 5
+        if self.is_rtb:
+            dmg_pct_tk = 50
         # если повреждения самолета более 50% предполагаем что посадка была жесткой
-        self.killed_by_damage(dmg_pct=50)
+        self.killed_by_damage(dmg_pct=50, dmg_pct_tk=dmg_pct_tk)
 
     def bot_eject_leave(self, tik, pos):
-        self.is_bailout = True
+        # this makes sortie bailout for airplanes only, and not for tanks/trucks
+        if self.sortie:
+            if not (self.sortie.cls in ('tank_light', 'tank_heavy', 'tank_medium', 'tank_turret', 'truck')):
+                self.is_bailout = True
         if self.is_on_enemy_territory(pos=pos):
             self.captured()
         if self.sortie:
             self.sortie.tik_bailout = tik
+        # this turn bailout for tank/truck in base area to rtb
+        if self.is_tank_rtb(pos=pos):
+            if self.parent:
+                self.parent.is_rtb = True
+            self.is_rtb = True
         if self.parent:
             self.parent.is_bailout = True
             self.parent.is_takeoff = True
@@ -644,6 +693,11 @@ class Object:
         if self.is_attack_itself(attacker=attacker):
             attacker = None
 
+        # dont give kill to attacker for tank/truck when its RTB and total damage to tank is less then 75%, if higher tank will be destroyed, no RTB, and attacker will get kill.
+        if (self.cls_base == 'tank' or self.cls_base == 'vehicle' or self.cls_base == 'turret') and self.is_tank_rtb(
+                pos=pos) and (self.damage < 75):
+            attacker = None
+
         is_friendly_fire = True if attacker and attacker.coal_id == self.coal_id else False
 
         if attacker:
@@ -656,18 +710,29 @@ class Object:
             # зачет киллов от турелей и т.п.
             # не передавать киллы пилоту, если за стрелка был игрок и был убит союзный объект
             if attacker.parent and not (attacker.sortie and is_friendly_fire):
-                    attacker.parent.killboard[self.cls].add(self)
+                attacker.parent.killboard[self.cls].add(self)
         # если есть убийца, или это игровое событие - пишем в лог
         if attacker or not force_by_dmg:
             self.mission.logger_event({'type': 'kill', 'attacker': attacker, 'pos': pos,
                                        'target': self, 'is_friendly_fire': is_friendly_fire})
 
-    def killed_by_damage(self, dmg_pct=0):
-        if not self.is_killed and (self.damage > dmg_pct or self.is_captured):
-            # если самолет приземлился не в зоне своего филда или пилот выпрыгнул или пилот мертв
-            # - записываем его как сбитый
-            if (self.on_ground and not self.is_rtb) or self.is_bailout or (self.bot and self.bot.life_status.is_destroyed):
-                self.got_killed(force_by_dmg=True)
+    def killed_by_damage(self, dmg_pct=0, dmg_pct_tk=0):
+        if self.cls_base == 'tank' or self.cls_base == 'vehicle':
+            # - by changing dmg_pct_tk value you can set up to what damage % tank or truck can be damaged to not give kill to attacker or sortie status changed to destroyed.
+            if not self.is_killed and (self.damage > dmg_pct_tk):
+                if self.is_tank_exit_damaged:
+                    self.got_killed(force_by_dmg=True)
+        if self.cls_base == 'aircraft':
+            if not self.is_killed and (self.damage > dmg_pct or self.is_captured):
+                # если самолет приземлился не в зоне своего филда или пилот выпрыгнул или пилот мертв
+                # - записываем его как сбитый
+                if (self.on_ground and not self.is_rtb) or self.is_bailout or (
+                        self.bot and self.bot.life_status.is_destroyed):
+                    self.got_killed(force_by_dmg=True)
+                # in case of disconection - the player who damaged him gets kill, when damage occurs at any time in flight
+                if self.sortie and not self.is_rtb:
+                    if not self.sortie.is_ended:
+                        self.got_killed(force_by_dmg=True)
 
     def update_by_sortie(self, sortie, is_aircraft=True):
         """
@@ -688,6 +753,12 @@ class Object:
     def is_aircraft_rtb(self, pos):
         for af in self.mission.get_airfields(include_coals=[self.coal_id]):
             if af.on_airfield(pos=pos):
+                return True
+        return False
+
+    def is_tank_rtb(self, pos):
+        for af in self.mission.get_airfields(include_coals=[self.coal_id]):
+            if af.tank_on_airfield(pos=pos):
                 return True
         return False
 
@@ -718,6 +789,7 @@ class Sortie:
     :type bot: Object | None
     :type mission: MissionReport
     """
+
     def __init__(self, mission, tik, aircraft_id, bot_id, account_id, profile_id, name, pos, aircraft_name, country_id,
                  coal_id, airfield_id, airstart, parent_id, payload_id, fuel, skin, weapon_mods_id,
                  cartridges, shells, bombs, rockets):
@@ -758,6 +830,7 @@ class Sortie:
         self.tik_last = tik
         if self.is_airstart:
             self.tik_takeoff = self.tik_spawn
+        self.tik_lastdamage = None
 
         self.used_cartridges = cartridges
         self.used_shells = shells
@@ -773,6 +846,9 @@ class Sortie:
 
         # вылет завершен
         self.is_disco = False
+        self.is_discobailout = False
+        self.is_damageddisco = False
+        self.is_tank_exit_damaged = False
         self.is_ended = False
 
         # логи могут баговать и идти не по порядку
@@ -833,11 +909,6 @@ class Sortie:
         self.used_rockets -= rockets
 
         # если это был вылет игрока-стрелка - то вычитаем его расход бз из расхода бз игрока-пилота
-        if self.parent:
-            self.parent.used_cartridges -= self.used_cartridges
-            self.parent.used_shells -= self.used_shells
-            self.parent.used_bombs -= self.used_bombs
-            self.parent.used_rockets -= self.used_rockets
 
         # TODO не удаляем объект потому что в логах события могут быть и после
         # https://gist.github.com/vaal-/5ea34735d7aa9f561c23
@@ -912,3 +983,12 @@ class Sortie:
             return False
         else:
             return True
+
+	# for Tanks/trucks , set True if last damage is with in specified time set in conf.ini.
+	# its used to give kill to attacker when sortie is turned to capture, if player bailout then dont count, bailed out game log gives kill to attacker automaticly.
+    def tank_is_ended_by_exit(self, tik):
+        if (self.cls_base == 'tank' or self.cls_base == 'vehicle' or self.cls_base == 'turret' ) and (self.tik_lastdamage is not None):
+            if (SORTIE_DAMAGE_DISCO_TIME > (tik - self.tik_lastdamage // 50)) and not (self.is_bailout):
+                return False
+            else:
+                return True

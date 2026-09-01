@@ -34,6 +34,9 @@ class PlayerQuerySet(models.QuerySet):
     def gunners(self, *args, **kwargs):
         return self.filter(type='gunner', *args, **kwargs)
 
+    def tankmans(self, *args, **kwargs):
+        return self.filter(type='tankman', *args, **kwargs)
+
     def active(self, tour):
         if settings.INACTIVE_PLAYER_DAYS:
             if tour.is_ended:
@@ -56,6 +59,9 @@ class PlayerManager(models.Manager):
     def pilots(self, *args, **kwargs):
         return self.get_queryset().pilots(*args, **kwargs)
 
+    def tankmans(self, *args, **kwargs):
+        return self.get_queryset().tankmans(*args, **kwargs)
+		
     def gunners(self, *args, **kwargs):
         return self.get_queryset().gunners(*args, **kwargs)
 
@@ -69,6 +75,9 @@ class PlayerManager(models.Manager):
 class VLifeQuerySet(models.QuerySet):
     def pilots(self, *args, **kwargs):
         return self.filter(player__type='pilot', relive=0, *args, **kwargs).exclude(sorties_total=0)
+
+    def tankmans(self, *args, **kwargs):
+        return self.filter(player__type='tankman', relive=0, *args, **kwargs).exclude(sorties_total=0)
 
     def active(self, tour):
         if settings.INACTIVE_PLAYER_DAYS:
@@ -91,6 +100,9 @@ class VLifeManager(models.Manager):
 
     def pilots(self, *args, **kwargs):
         return self.get_queryset().pilots(*args, **kwargs)
+
+    def tankmans(self, *args, **kwargs):
+        return self.get_queryset().tankmans(*args, **kwargs)
 
     def active(self, tour):
         return self.get_queryset().active(tour=tour)

@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.templatetags.static import static
 from django.db import connection, models
-from django.db.models import Avg, Count, Sum, BigIntegerField, JSONField
+from django.db.models import Avg, Count, Sum, BigIntegerField, Q
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _, pgettext_lazy
@@ -15,6 +15,7 @@ from mission_report.statuses import BotLifeStatus, SortieStatus, LifeStatus, VLi
 
 from .aircraft_mods import get_aircraft_mods
 from .aircraft_payloads import get_aircraft_payload
+from .tank_payloads import get_tank_payload
 from .models_managers import PlayerManager, SquadManager, VLifeManager
 from .sql import get_position_by_field, get_squad_position_by_field
 
@@ -34,6 +35,7 @@ def default_sorties_cls():
     return {
         'aircraft_light': 0, 'aircraft_medium': 0, 'aircraft_heavy': 0, 'aircraft_transport': 0,
         'aircraft_turret': 0,
+        'tank_light': 0, 'tank_medium': 0, 'tank_heavy': 0, 'truck': 0,
     }
 
 
@@ -81,7 +83,6 @@ class Score(models.Model):
         else:
             return self.get_value()
 
-
 class Object(models.Model):
     CLASSES = (
         ('aaa_heavy', 'aaa_heavy'),
@@ -107,7 +108,6 @@ class Object(models.Model):
         ('building_small', 'building_small'),
         ('bullet', 'bullet'),
         ('car', 'car'),
-        ('cruise_missile', 'cruise_missile'),
         ('driver', 'driver'),
         ('explosion', 'explosion'),
         ('locomotive', 'locomotive'),
@@ -138,6 +138,7 @@ class Object(models.Model):
         ('block', 'block'),
         ('crew', 'crew'),
         ('turret', 'turret'),
+        ('tank', 'tank'),
         ('vehicle', 'vehicle'),
     )
 
@@ -161,6 +162,9 @@ class Object(models.Model):
         # хак для Handley Page O/400
         log_name = self.log_name.replace('/', '-')
         return static('img/aircraft/{log_name}.png'.format(log_name=log_name))
+		
+    def tank_image(self):
+        return static('img/Tank/{log_name}.png'.format(log_name=self.log_name))
 
 
 class Tour(models.Model):
@@ -235,7 +239,7 @@ class Tour(models.Model):
             summary_coal[s['coalition']].update(s)
         return summary_coal
 
-    def coal_active_players(self):
+    def coal_active_pilots(self):
         coal = {0: 0, 1: 0, 2: 0}
         active_players = (Player.players
                           .pilots(tour_id=self.id)
@@ -246,6 +250,19 @@ class Tour(models.Model):
         for p in active_players:
             coal[p['coal_pref']] = p['players']
         return coal
+
+    def coal_active_tankmans(self):
+        coal = {0: 0, 1: 0, 2: 0}
+        active_players = (Player.players
+                          .tankmans(tour_id=self.id)
+                          .active(tour=self)
+                          .values('coal_pref')
+                          .order_by()
+                          .annotate(players=Count('id')))
+        for p in active_players:
+            coal[p['coal_pref']] = p['players']
+        return coal
+		
 
     def get_title(self):
         if self.title:
@@ -310,7 +327,7 @@ class Mission(models.Model):
     is_correctly_completed = models.BooleanField(default=False)
 
     # стоимость объектов и т.п. на момент завершения миссии
-    score_dict = JSONField(default=dict)
+    score_dict = models.JSONField(default=dict)
 
     is_hide = models.BooleanField(default=False, db_index=True)
 
@@ -401,7 +418,7 @@ class Player(models.Model):
 
     sorties_total = models.IntegerField(default=0)
     sorties_coal = ArrayField(models.IntegerField(default=0), default=default_coal_list)
-    sorties_cls = JSONField(default=default_sorties_cls)
+    sorties_cls = models.JSONField(default=default_sorties_cls)
 
     COALITIONS = (
         (Coalition.neutral, pgettext_lazy('coalition', _('neutral'))),
@@ -414,7 +431,7 @@ class Player(models.Model):
     # налет в секундах?
     flight_time = models.BigIntegerField(default=0, db_index=True)
 
-    ammo = JSONField(default=default_ammo)
+    ammo = models.JSONField(default=default_ammo)
     accuracy = models.FloatField(default=0, db_index=True)
 
     streak_current = models.IntegerField(default=0, db_index=True)
@@ -459,8 +476,8 @@ class Player(models.Model):
     fak_total = models.IntegerField(default=0)
     fgk_total = models.IntegerField(default=0)
 
-    killboard_pvp = JSONField(default=dict)
-    killboard_pve = JSONField(default=dict)
+    killboard_pvp = models.JSONField(default=dict)
+    killboard_pve = models.JSONField(default=dict)
 
     ce = models.FloatField(default=0)
     kd = models.FloatField(default=0, db_index=True)
@@ -516,10 +533,21 @@ class Player(models.Model):
         self.update_coal_pref()
         super().save(*args, **kwargs)
 
+    def get_tankman_url(self):
+        url = '{url}?tour={tour_id}'.format(url=reverse('stats:tankman', args=[self.profile_id, self.nickname]),
+                                            tour_id=self.tour_id)
+        return url
+
     def get_profile_url(self):
         url = '{url}?tour={tour_id}'.format(url=reverse('stats:pilot', args=[self.profile_id, self.nickname]),
                                             tour_id=self.tour_id)
         return url
+		
+    def get_pilot_url(self):
+        url = '{url}?tour={tour_id}'.format(url=reverse('stats:pilot', args=[self.profile_id, self.nickname]),
+                                            tour_id=self.tour_id)
+        return url
+
 
     def get_sorties_url(self):
         url = '{url}?tour={tour_id}'.format(url=reverse('stats:pilot_sorties', args=[self.profile_id, self.nickname]),
@@ -544,6 +572,26 @@ class Player(models.Model):
     def get_position_by_field(self, field='rating'):
         return get_position_by_field(player=self, field=field)
 
+
+    def get_tankman_sorties_url(self):
+        url = '{url}?tour={tour_id}'.format(url=reverse('stats:tankman_sorties', args=[self.profile_id, self.nickname]),
+                                            tour_id=self.tour_id)
+        return url
+
+    def get_tankman_vlifes_url(self):
+        url = '{url}?tour={tour_id}'.format(url=reverse('stats:tankman_vlifes', args=[self.profile_id, self.nickname]),
+                                            tour_id=self.tour_id)
+        return url
+
+    def get_tankman_awards_url(self):
+        url = '{url}?tour={tour_id}'.format(url=reverse('stats:tankman_awards', args=[self.profile_id, self.nickname]),
+                                            tour_id=self.tour_id)
+        return url
+
+    def get_tankman_killboard_url(self):
+        url = '{url}?tour={tour_id}'.format(url=reverse('stats:tankman_killboard', args=[self.profile_id, self.nickname]),
+                                            tour_id=self.tour_id)
+        return url
     @property
     def nickname(self):
         return self.profile.nickname
@@ -574,6 +622,7 @@ class Player(models.Model):
 
     @property
     def rating_format(self):
+							   
         return rating_format_helper(self.rating)
 
     @property
@@ -614,6 +663,8 @@ class Player(models.Model):
 
     def update_rating(self):
         self.rating = calculate_rating(self.score, self.relive, self.flight_time_hours)
+											 
+						
         self.rating_light = calculate_rating(self.score_light, self.relive_light, self.flight_time_light_hours)
         self.rating_medium = calculate_rating(self.score_medium, self.relive_medium, self.flight_time_medium_hours)
         self.rating_heavy = calculate_rating(self.score_heavy, self.relive_heavy, self.flight_time_heavy_hours)
@@ -656,7 +707,7 @@ class PlayerMission(models.Model):
     # налет в секундах?
     flight_time = models.BigIntegerField(default=0, db_index=True)
 
-    ammo = JSONField(default=default_ammo)
+    ammo = models.JSONField(default=default_ammo)
     accuracy = models.FloatField(default=0, db_index=True)
 
     bailout = models.IntegerField(default=0)
@@ -681,8 +732,8 @@ class PlayerMission(models.Model):
     fak_total = models.IntegerField(default=0)
     fgk_total = models.IntegerField(default=0)
 
-    killboard_pvp = JSONField(default=dict)
-    killboard_pve = JSONField(default=dict)
+    killboard_pvp = models.JSONField(default=dict)
+    killboard_pve = models.JSONField(default=dict)
 
     ce = models.FloatField(default=0)
     kd = models.FloatField(default=0, db_index=True)
@@ -720,6 +771,16 @@ class PlayerMission(models.Model):
                                             tour_id=self.player.tour_id)
         return url
 
+    def get_pilot_url(self):
+        url = '{url}?tour={tour_id}'.format(url=reverse('stats:pilot', args=[self.profile_id, self.nickname]),
+                                            tour_id=self.player.tour_id)
+        return url
+		
+    def get_tankman_url(self):
+        url = '{url}?tour={tour_id}'.format(url=reverse('stats:tankman', args=[self.profile_id, self.nickname]),
+                                            tour_id=self.player.tour_id)
+        return url
+		
     @property
     def nickname(self):
         return self.profile.nickname
@@ -776,7 +837,7 @@ class PlayerAircraft(models.Model):
     sorties_total = models.IntegerField(default=0)
     flight_time = models.BigIntegerField(default=0)
 
-    ammo = JSONField(default=default_ammo)
+    ammo = models.JSONField(default=default_ammo)
     accuracy = models.FloatField(default=0)
 
     bailout = models.IntegerField(default=0)
@@ -801,8 +862,8 @@ class PlayerAircraft(models.Model):
     fak_total = models.IntegerField(default=0)
     fgk_total = models.IntegerField(default=0)
 
-    killboard_pvp = JSONField(default=dict)
-    killboard_pve = JSONField(default=dict)
+    killboard_pvp = models.JSONField(default=dict)
+    killboard_pve = models.JSONField(default=dict)
 
     ce = models.FloatField(default=0)
     kd = models.FloatField(default=0)
@@ -878,7 +939,7 @@ class VLife(models.Model):
 
     sorties_total = models.IntegerField(default=0, db_index=True)
     sorties_coal = ArrayField(models.IntegerField(default=0), default=default_coal_list)
-    sorties_cls = JSONField(default=default_sorties_cls)
+    sorties_cls = models.JSONField(default=default_sorties_cls)
 
     COALITIONS = (
         (Coalition.neutral, pgettext_lazy('coalition', _('neutral'))),
@@ -890,7 +951,7 @@ class VLife(models.Model):
 
     flight_time = models.BigIntegerField(default=0, db_index=True)
 
-    ammo = JSONField(default=default_ammo)
+    ammo = models.JSONField(default=default_ammo)
     accuracy = models.FloatField(default=0, db_index=True)
 
     bailout = models.IntegerField(default=0)
@@ -915,8 +976,8 @@ class VLife(models.Model):
     fak_total = models.IntegerField(default=0)
     fgk_total = models.IntegerField(default=0)
 
-    killboard_pvp = JSONField(default=dict)
-    killboard_pve = JSONField(default=dict)
+    killboard_pvp = models.JSONField(default=dict)
+    killboard_pve = models.JSONField(default=dict)
 
     STATUS = (
         (SortieStatus.landed, pgettext_lazy('sortie_status', 'landed')),
@@ -1093,7 +1154,7 @@ class Sortie(models.Model):
     payload_id = models.IntegerField(default=0)
     weapon_mods_id = ArrayField(models.IntegerField(), default=list)
 
-    ammo = JSONField(default=default_ammo)
+    ammo = models.JSONField(default=default_ammo)
 
     COALITIONS = (
         (Coalition.neutral, pgettext_lazy('coalition', _('neutral'))),
@@ -1127,8 +1188,8 @@ class Sortie(models.Model):
     fak_total = models.IntegerField(default=0)
     fgk_total = models.IntegerField(default=0)
 
-    killboard_pvp = JSONField(default=dict)
-    killboard_pve = JSONField(default=dict)
+    killboard_pvp = models.JSONField(default=dict)
+    killboard_pve = models.JSONField(default=dict)
 
     STATUS = (
         (SortieStatus.landed, pgettext_lazy('sortie_status', 'landed')),
@@ -1164,14 +1225,14 @@ class Sortie(models.Model):
 
     ratio = models.FloatField(default=1)
     score = models.IntegerField(default=0)
-    score_dict = JSONField(default=dict)
+    score_dict = models.JSONField(default=dict)
     damage = models.FloatField(default=0)
     wound = models.FloatField(default=0)
 
     fairplay = models.IntegerField(default=100)
-    bonus = JSONField(default=dict)
+    bonus = models.JSONField(default=dict)
 
-    debug = JSONField(default=dict)
+    debug = models.JSONField(default=dict)
     is_ignored = models.BooleanField(default=False)
 
     class Meta:
@@ -1209,9 +1270,10 @@ class Sortie(models.Model):
     def is_ditched(self):
         return self.status == SortieStatus.ditched
 
+    # change added so when discobailout or damageddisco(when not shotdown) events = True, lost airplane for thouse sorties counts in total airplane lost for player
     @property
     def is_crashed(self):
-        return self.status == SortieStatus.crashed
+        return self.status == SortieStatus.crashed or self.is_captured or self.is_bailout
 
     @property
     def is_shotdown(self):
@@ -1245,8 +1307,16 @@ class Sortie(models.Model):
         return get_aircraft_mods(aircraft=self.aircraft.log_name, id_list=tuple(self.weapon_mods_id))
 
     @property
+    def modificationst(self):
+        return get_tank_mods(aircraft=self.aircraft.log_name, id_list=tuple(self.weapon_mods_id))
+
+    @property
     def payload(self):
         return get_aircraft_payload(aircraft=self.aircraft.log_name, payload_id=self.payload_id)
+
+    @property
+    def payloadt(self):
+        return get_tank_payload(aircraft=self.aircraft.log_name, payload_id=self.payload_id)
 
 
 class KillboardPvP(models.Model):
@@ -1306,7 +1376,7 @@ class LogEntry(models.Model):
     date = models.DateTimeField()
     tik = models.IntegerField(db_index=True)
     type = models.CharField(max_length=16, choices=TYPES, db_index=True)
-    extra_data = JSONField(default=dict)
+    extra_data = models.JSONField(default=dict)
 
     class Meta:
         db_table = 'log_entries'
@@ -1328,7 +1398,7 @@ class Squad(models.Model):
 
     sorties_total = models.IntegerField(default=0)
     sorties_coal = ArrayField(models.IntegerField(default=0), default=default_coal_list)
-    sorties_cls = JSONField(default=default_sorties_cls)
+    sorties_cls = models.JSONField(default=default_sorties_cls)
 
     COALITIONS = (
         (Coalition.neutral, pgettext_lazy('coalition', _('neutral'))),
@@ -1417,6 +1487,11 @@ class Squad(models.Model):
                                             tour_id=self.tour_id)
         return url
 
+    def get_tankmans_url(self):
+        url = '{url}?tour={tour_id}'.format(url=reverse('stats:squad_tankmans', args=[self.profile_id, self.tag]),
+                                            tour_id=self.tour_id)
+        return url
+		
     def get_position_by_field(self, field='rating'):
         return get_squad_position_by_field(squad=self, field=field)
 
@@ -1454,7 +1529,10 @@ class Squad(models.Model):
 
     @property
     def rating_format(self):
+							   
         return rating_format_helper(self.rating)
+			 
+							  
 
     @property
     def rating_format_heavy(self):
@@ -1492,6 +1570,7 @@ class Squad(models.Model):
         self.rating = calculate_rating(self.score, self.relive, self.flight_time_hours, self.max_members)
         self.rating_light = calculate_rating(self.score_light, self.relive_light, self.flight_time_light_hours, self.max_members)
         self.rating_medium = calculate_rating(self.score_medium, self.relive_medium, self.flight_time_medium_hours, self.max_members)
+														 
         self.rating_heavy = calculate_rating(self.score_heavy, self.relive_heavy, self.flight_time_heavy_hours, self.max_members)
 
     def update_coal_pref(self):
@@ -1505,7 +1584,12 @@ class Squad(models.Model):
                 self.coal_pref = 0
 
     def update_num_members(self):
-        self.num_members = self.players.filter(type='pilot').count()
+        self.num_members = self.players.filter(
+            Q(type='pilot') | Q(type='tankman')
+        ).values_list(
+            'profile_id'
+        ).distinct().count()
+
         if self.num_members > self.max_members:
             self.max_members = self.num_members
 

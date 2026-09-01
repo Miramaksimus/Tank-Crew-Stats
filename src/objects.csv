@@ -315,6 +315,7 @@ aircraft_medium,Bristol F2B (F.III),1,,
 aircraft_medium,DFW C.V,1,,
 aircraft_medium,Halberstadt CL.II,1,,
 aircraft_medium,Halberstadt CL.II 200hp,1,,
+aircraft_medium,Halberstadt D.II,1,,
 aircraft_medium,Hs 129 B-2,1,,
 aircraft_medium,Il-2 mod.1941,1,IL-2 model 1941,Ил-2 модель 1941 года
 aircraft_medium,Il-2 mod.1942,1,IL-2 AM-38,Ил-2 AM-38
@@ -1946,7 +1947,7 @@ ship_medium,Submarine Type Shch ser.10,0,Submarine Shch-10 (type Shchuka),Под
 tank_driver,BotDriver_KV1,1,driver,
 tank_driver,BotDriver_PzIII,1,driver,водитель
 tank_driver,BotDriver_T34,1,driver,водитель
-tank_heavy,Churchill IV,1,,
+tank_heavy,Churchill IV,1,Churchill IV,Черчилль IV
 tank_heavy,JagdPz IV L70,1,JagdPz IV L70,
 tank_heavy,KV-1-41,0,KV-1 1941,КВ-1 обр. 1941
 tank_heavy,KV-1-42,0,KV-1 1942,КВ-1 обр. 1942
@@ -1956,8 +1957,8 @@ tank_heavy,Mark V (female),0,,
 tank_heavy,Mark V (male),0,,
 tank_heavy,Pz.Kpfw.VI Ausf.H,1,Pz.Kpfw.VI Ausf.H,
 tank_heavy,Pz.Kpfw.VI Ausf.H1,1,Pz.Kpfw.VI Ausf.H1,
-tank_heavy,PzKpfw V Ausf.G,1,,
-tank_heavy,Sd.Kfz.184,1,,
+tank_heavy,PzKpfw V Ausf.G,1,PzKpfw V Ausf.G,
+tank_heavy,Sd.Kfz.184,1,Sd.Kfz.184,
 tank_heavy,Sturmpanzerwagen A7V,0,,
 tank_heavy,SU-152 ChKZ (1943),1,SU-152 ChKZ (1943),СУ-152 1943
 tank_light,BT-7M,0,BT-7M,БТ-7М
@@ -1985,25 +1986,25 @@ tank_medium,PzKpfw IV Ausf.H,1,,
 tank_medium,Schneider CA 1,0,,
 tank_medium,StuG III Ausf.C-D,0,StuG III Ausf.C-D,
 tank_medium,StuG III Ausf.F,0,StuG III Ausf.F,
-tank_medium,StuG III Ausf.G,1,,
-tank_medium,SU-122 UZTM (1943),1,,
+tank_medium,StuG III Ausf.G,1,StuG III Ausf.G,
+tank_medium,SU-122 UZTM (1943),1,SU-122 UZTM 1943,СУ-122 УЗТМ 1943
 tank_medium,T-34-76 STZ,0,T-34-76 STZ 1942,Т-34 СТЗ обр. 1942
 tank_medium,T-34-76 STZ 41,0,T-34-76 STZ 1941,Т-34 СТЗ обр. 1941
 tank_medium,T-34-76 UTZ 43,1,,
 tank_medium,T-34-76 UVZ 43,1,T-34-76 UVZ 1943,Т-34 УВЗ обр. 1943
 tank_medium,T-34/76 STZ(1942),1,T-34-76 STZ 1942,Т-34 СТЗ обр. 1942
-tank_medium,T-34/76 UTZ (1943),1,,
+tank_medium,T-34/76 UTZ (1943),1,T-34-76 UTZ 1943,Т-34 УTЗ обр. 1943
 tank_medium,T-34/76 UVZ (1943),1,T-34-76 UVZ 1943,Т-34 УВЗ обр. 1943
 tank_turret,_Churchill-IV_T1,1,,
 tank_turret,_Churchill-IV_T2,1,,
-tank_turret,_GAZ-MM-72K_T0,1,,
+tank_turret,_GAZ-MM-72K_T0,1,GAZ-MM 72K turret,ГАЗ-ММ 72K башня
 tank_turret,_GAZ-MM-72K_T1,1,,
 tank_turret,_GAZ-MM-72K_T3,1,,
-tank_turret,_KV1S_T0,1,turret KV-1s,башня КВ-1С
+tank_heavy,_KV1S_T0,1,KV-1s turret,КВ-1С башня
 tank_turret,_KV1S_T1,1,,
 tank_turret,_KV1S_T2,1,,
 tank_turret,_KV1S_T3,1,,
-tank_turret,_M4A2_T0,1,,
+tank_medium,_M4A2_T0,1,M4A2 turret,M4A2 башня
 tank_turret,_M4A2_T1,1,,
 tank_turret,_M4A2_T2,1,,
 tank_turret,_M4A2_T3,1,,
@@ -2013,40 +2014,41 @@ tank_turret,_PzIII-M_T3,1,,
 tank_turret,_PzIV-G_T1,1,,
 tank_turret,_PzIV-G_T2,1,,
 tank_turret,_PzIV-G_T3,1,,
-tank_turret,_PzV-D_T0,1,,
+tank_medium,_PzV-D_T0,1,PzKpfw V Ausf.D turret,башня PzKpfw V Ausf.D башня
 tank_turret,_PzV-D_T1,1,,
 tank_turret,_PzV-D_T2,1,,
 tank_turret,_PzV-D_T3,1,,
-tank_turret,_PzVI-H1_T0,1,turret Pz.Kpfw.VI Ausf.H1,башня Pz.Kpfw.VI Ausf.H1
+tank_heavy,_PzVI-H1_T0,1,Pz.Kpfw.VI Ausf.H1 turret,Pz.Kpfw.VI Ausf.H1 башня
 tank_turret,_PzVI-H1_T1,1,,
 tank_turret,_PzVI-H1_T2,1,,
 tank_turret,_PzVI-H1_T3,1,,
-tank_turret,_SdKfz10-5_T0,1,,
+tank_turret,_SdKfz10-5_T0,1,Sd.Kfz.10-5 turret,Sd.Kfz.10-5 башня
 tank_turret,_SdKfz10-5_T1,1,,
-tank_turret,_SdKfz10-5_T2,1,,
-tank_turret,_SdKfz184_T0,1,turret Sd.Kfz.184,башня Sd.Kfz.184
+tank_turret,_SdKfz10-5_T2,1,,	 
+tank_heavy,_SdKfz184_T0,1,Sd.Kfz.184 turret,Sd.Kfz.184 башня
 tank_turret,_SdKfz184_T1,1,,
 tank_turret,_SdKfz184_T2,1,turret Sd.Kfz.184,башня Sd.Kfz.184
-tank_turret,_StuGIII-G_T0,1,,
+tank_medium,_StuGIII-G_T0,1,StuG III Ausf.G turret,StuG III Ausf.G башня
 tank_turret,_StuGIII-G_T1,1,,
 tank_turret,_StuGIII-G_T2,1,,
 tank_turret,_SU122_T0,1,,
+tank_medium,_SU122_T0,1,SU-122 UZTM turret,СУ-122 УЗТМ башня
 tank_turret,_SU122_T2,1,,
-tank_turret,_SU152_T0,1,turret SU152,башня СУ-152
+tank_heavy,_SU152_T0,1,SU152 turret,СУ-152 башня 
 tank_turret,_SU152_T2,1,,
 tank_turret,_SU152_T3,1,,
 tank_turret,_SU152_T4,1,,
-tank_turret,_T34-76UVZ-43_T0,1,,
+tank_medium,_T34-76UVZ-43_T0,1,T-34-76 UVZ turret,Т-34 УВЗ башня
 tank_turret,_T34-76UVZ-43_T1,1,,
 tank_turret,_T34-76UVZ-43_T2,1,,
 tank_turret,_T34-76UVZ-43_T3,1,,
 tank_turret,TankTurret,0,,
-tank_turret,Turret_Churchill-IV,1,,
-tank_turret,Turret_PzIII-L,1,turret PzKpfw III Ausf.L,башня PzKpfw III Ausf.L
-tank_turret,Turret_PzIII-M,1,,
-tank_turret,Turret_PzIII-M,1,,
-tank_turret,Turret_PzIV-G,1,,
-tank_turret,Turret_T34-76STZ,1,turret T-34-76 STZ,башня Т-34 СТЗ
+tank_heavy,Turret_Churchill-IV,1,Churchill IV turret,Черчилль IV башня 
+tank_medium,Turret_PzIII-L,1,PzKpfw III Ausf.L turret,башня PzKpfw III Ausf.L башня
+tank_medium,Turret_PzIII-M,1,PzKpfw III Ausf.M turret,башня PzKpfw III Ausf.M башня
+tank_medium,Turret_PzIII-M,1,PzKpfw III Ausf.M turret,башня PzKpfw III Ausf.M башня
+tank_medium,Turret_PzIV-G,1,PzKpfw III Ausf.G turret,PzKpfw III Ausf.G башня
+tank_medium,Turret_T34-76STZ,1,T-34-76 STZ turret,Т-34 СТЗ башня
 trash,_Churchill-IV_sight1,0,,
 trash,_Churchill-IV_T2_sight1,0,,
 trash,_Churchill-IV_T3,1,,
@@ -3439,7 +3441,7 @@ truck,Ford G917 ammo,0,,
 truck,GAZ-55,0,,
 truck,GAZ-AA,0,GAZ-AA truck,грузовик ГАЗ-АА
 truck,GAZ-AA ammo,0,,
-truck,GAZ-MM 72-K,1,,
+truck,GAZ-MM 72-K,1,GAZ-MM 72-K,ГАЗ-ММ 72-К
 truck,GMC CCKW 353,0,GMC CCKW truck,грузовик GMC CCKW
 truck,GMC CCKW 353 ammo,0,,
 truck,GMC CCKW 353 Fuel,0,,
@@ -3455,7 +3457,7 @@ truck,Opel Blitz Ambulance,0,,
 truck,Opel Blitz ammo,0,,
 truck,Opel Blitz Tankwagen,0,,
 truck,Sd Kfz 222,0,,
-truck,Sd.Kfz.10-5,1,,
+truck,Sd.Kfz.10-5,1,Sd.Kfz.10-5,Sd.Kfz.10-5
 truck,ZiS-5,0,ZiS-5 truck,грузовик ЗиС-5
 vehicle_crew,BotBoatSwain,0,boatswain,боцман
 vehicle_crew,BotCommander_KV1,0,commander,
