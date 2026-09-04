@@ -39,6 +39,7 @@ services:
     volumes:
       - static:/app/static
       - media:/app/media
+#      - ./src:/app/src
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8077/ || exit 1"]
       interval: 15s
