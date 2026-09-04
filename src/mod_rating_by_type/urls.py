@@ -62,7 +62,7 @@ urlpatterns = [
     re_path(r'^tankman_vlifes/(?P<profile_id>\d+)/$', views.tankman_vlifes),
 
     re_path(r'^ironman/$', views.ironman_stats, name='ironman'),
-    re_path(r'^mission_ironman', views.mission_ironman, name='mission_ironman'),
+    re_path(r'^mission_ironman/$', views.mission_ironman, name='mission_ironman'),
     re_path(r'^mission_vlife/(?P<vlife_id>\d+)/$', views.mission_vlife, name='mission_vlife'),
 
     re_path(r'^gunners/$', views.gunners, name='gunners'),
