@@ -36,6 +36,8 @@ django-rosetta==0.10.3
     # via -r requirements.in
 filelock==3.32.4
     # via -r requirements.in
+gunicorn==26.2.0
+    # via -r requirements.in
 idna==3.19
     # via requests
 iniconfig==2.3.0
@@ -103,7 +105,5 @@ tzlocal==5.4.4
     # via -r requirements.in
 urllib3==2.7.0
     # via requests
-waitress==3.0.2
-    # via -r requirements.in
 whitenoise==6.12.0
     # via -r requirements.in

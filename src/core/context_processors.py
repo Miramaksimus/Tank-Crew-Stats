@@ -20,4 +20,5 @@ def version(request):
 def settings(request):
     return {
         'SEND_EMAIL': _settings.SEND_EMAIL,
+        'SKIN_ID': _settings.SKIN_ID,
     }

@@ -89,6 +89,8 @@ hr {
 
 header {
     background: #E74C3C url(../img/head_1.jpg) top center no-repeat;
+    background-size: cover;
+    animation: changeBackground 18s infinite;
     //background: #E74C3C;
     width: 100%;
     max-width: 1920px;
@@ -1700,4 +1702,26 @@ footer {
     text-decoration: none;
     opacity: 0.85;
     color: #ffffff;
+}
+
+
+@keyframes changeBackground {
+    0% {
+        background-image: url(../img/head_1.jpg);
+    }
+    33% {
+        background-image: url(../img/head_1.jpg);
+    }
+    34% {
+        background-image: url(../img/head_2.jpg);
+    }
+    66% {
+        background-image: url(../img/head_2.jpg);
+    }
+    67% {
+        background-image: url(../img/head_3.jpg);
+    }
+    100% {
+        background-image: url(../img/head_3.jpg);
+    }
 }

@@ -11,6 +11,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 from datetime import timedelta
+import os
 import pathlib
 
 from django.utils.translation import gettext_lazy as _
@@ -351,6 +352,24 @@ SQUAD_MEMBERS_MINIMUM = 4
 
 ACCOUNT_ACTIVATION_DAYS = 1
 
+# Security settings for HTTPS
+SECURE_SSL_REDIRECT = not DEBUG  # Redirigir HTTP a HTTPS en producción
+SESSION_COOKIE_SECURE = not DEBUG  # Enviar cookies solo por HTTPS
+CSRF_COOKIE_SECURE = not DEBUG  # Enviar CSRF token solo por HTTPS
+SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0  # 1 año
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
+
+# Trusted proxy headers (necesario con Nginx reverse proxy)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# CORS/Host validation
+# ALLOWED_HOSTS = ['aas.game-statistics.com', 'localhost', '127.0.0.1', '79.112.41.15']
+ALLOWED_HOSTS = ['aas.game-statistics.com', 'localhost', '127.0.0.1']
+
+# Default skin ID before importing config
+SKIN_ID = 1
+
 from config import *
 
 try:
@@ -362,6 +381,10 @@ if SKIN_ID == 2:
     STATICFILES_DIRS.append(str(BASE_DIR.joinpath('skins', '2')))
     COAL_1_NAME = pgettext_lazy('coalition', 'Entente')
     COAL_2_NAME = pgettext_lazy('coalition', 'Central Powers')
+if SKIN_ID == 3:
+    STATICFILES_DIRS.append(str(BASE_DIR.joinpath('skins', '3')))
+    COAL_1_NAME = pgettext_lazy('coalition', 'Allies')
+    COAL_2_NAME = pgettext_lazy('coalition', 'Axis')
 else:
     STATICFILES_DIRS.append(str(BASE_DIR.joinpath('skins', '1')))
     COAL_1_NAME = pgettext_lazy('coalition', 'Allies')

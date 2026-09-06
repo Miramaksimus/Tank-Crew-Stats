@@ -41,7 +41,7 @@ services:
       - media:/app/media
 #      - ./src:/app/src
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8077/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f -k https://localhost:8077/ || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
