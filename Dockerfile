@@ -34,6 +34,11 @@ RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh \
 # Docker-specific configuration (DB host = db, bind 0.0.0.0)
 COPY docker/conf.ini /app/src/conf.ini
 
+# Añade después de "COPY . ."
+COPY ssl/tc.crt /app/ssl/
+COPY ssl/tc.key /app/ssl/
+RUN chmod 644 /app/ssl/tc.crt && chmod 600 /app/ssl/tc.key
+
 WORKDIR /app/src
 
 EXPOSE 8077

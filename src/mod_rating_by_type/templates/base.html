@@ -5,35 +5,79 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 {#    <meta name="viewport" content="width=device-width, initial-scale=1">#}
+
+    <meta name="robots" content="noindex, nofollow, noimageindex, noarchive">
+    <meta name="googlebot" content="noindex, nofollow">
     <meta name="description" content="">
-    <meta name="author" content="IL2 stats {{ VERSION }}">
+    <meta name="author" content="Tank Crew Stats {{ VERSION }}">
 
-    <link rel="icon" href="{% static 'favicon.ico' %}">
-    <link rel="apple-touch-icon-precomposed" sizes="57x57" href="{% static 'apple-touch-icon-57x57.png' %}" />
-    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="{% static 'apple-touch-icon-114x114.png' %}" />
-    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="{% static 'apple-touch-icon-72x72.png' %}" />
-    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="{% static 'apple-touch-icon-144x144.png' %}" />
-    <link rel="apple-touch-icon-precomposed" sizes="60x60" href="{% static 'apple-touch-icon-60x60.png' %}" />
-    <link rel="apple-touch-icon-precomposed" sizes="120x120" href="{% static 'apple-touch-icon-120x120.png' %}" />
-    <link rel="apple-touch-icon-precomposed" sizes="76x76" href="{% static 'apple-touch-icon-76x76.png' %}" />
-    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="{% static 'apple-touch-icon-152x152.png' %}" />
-    <link rel="icon" type="image/png" href="{% static 'favicon-196x196.png' %}" sizes="196x196" />
-    <link rel="icon" type="image/png" href="{% static 'favicon-96x96.png' %}" sizes="96x96" />
-    <link rel="icon" type="image/png" href="{% static 'favicon-128.png' %}" sizes="128x128" />
-    <meta name="application-name" content="IL2 stats {{ VERSION }}"/>
-    <meta name="msapplication-TileColor" content="#353535" />
-    <meta name="msapplication-TileImage" content="{% static 'mstile-144x144.png' %}" />
-    <meta name="msapplication-square70x70logo" content="{% static 'mstile-70x70.png' %}" />
-    <meta name="msapplication-square150x150logo" content="{% static 'mstile-150x150.png' %}" />
-    <meta name="msapplication-wide310x150logo" content="{% static 'mstile-310x150.png' %}" />
-    <meta name="msapplication-square310x310logo" content="{% static 'mstile-310x310.png' %}" />
+    {% if SKIN_ID == 1 or SKIN_ID == 2 %}
 
-    <title>{% block title %}{{ server_name.title }} (IL2 stats){% endblock title %}</title>
+        <link rel="icon" href="{% static 'favicon.ico' %}">
+        <link rel="apple-touch-icon-precomposed" sizes="57x57" href="{% static 'apple-touch-icon-57x57.png' %}" />
+        <link rel="apple-touch-icon-precomposed" sizes="114x114" href="{% static 'apple-touch-icon-114x114.png' %}" />
+        <link rel="apple-touch-icon-precomposed" sizes="72x72" href="{% static 'apple-touch-icon-72x72.png' %}" />
+        <link rel="apple-touch-icon-precomposed" sizes="144x144" href="{% static 'apple-touch-icon-144x144.png' %}" />
+        <link rel="apple-touch-icon-precomposed" sizes="60x60" href="{% static 'apple-touch-icon-60x60.png' %}" />
+        <link rel="apple-touch-icon-precomposed" sizes="120x120" href="{% static 'apple-touch-icon-120x120.png' %}" />
+        <link rel="apple-touch-icon-precomposed" sizes="76x76" href="{% static 'apple-touch-icon-76x76.png' %}" />
+        <link rel="apple-touch-icon-precomposed" sizes="152x152" href="{% static 'apple-touch-icon-152x152.png' %}" />
+        <link rel="icon" type="image/png" href="{% static 'favicon-196x196.png' %}" sizes="196x196" />
+        <link rel="icon" type="image/png" href="{% static 'favicon-96x96.png' %}" sizes="96x96" />
+        <link rel="icon" type="image/png" href="{% static 'favicon-128.png' %}" sizes="128x128" />
+        <meta name="application-name" content="IL2 stats {{ VERSION }}"/>
+        <meta name="msapplication-TileColor" content="#353535" />
+        <meta name="msapplication-TileImage" content="{% static 'mstile-144x144.png' %}" />
+        <meta name="msapplication-square70x70logo" content="{% static 'mstile-70x70.png' %}" />
+        <meta name="msapplication-square150x150logo" content="{% static 'mstile-150x150.png' %}" />
+        <meta name="msapplication-wide310x150logo" content="{% static 'mstile-310x150.png' %}" />
+        <meta name="msapplication-square310x310logo" content="{% static 'mstile-310x310.png' %}" />
+
+
+    {% elif SKIN_ID == 3 %}
+
+        <link rel="icon" href="{% static 'favicon.ico' %}">
+        <link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon-16x16.png' %}">
+        <link rel="icon" type="image/png" sizes="32x32" href="{% static 'favicon-32x32.png' %}">
+        <link rel="icon" type="image/png" sizes="96x96" href="{% static 'favicon-96x96.png' %}">
+
+        <link rel="apple-touch-icon" sizes="57x57" href="{% static 'apple-icon-57x57.png' %}">
+        <link rel="apple-touch-icon" sizes="60x60" href="{% static 'apple-icon-60x60.png' %}">
+        <link rel="apple-touch-icon" sizes="72x72" href="{% static 'apple-icon-72x72.png' %}">
+        <link rel="apple-touch-icon" sizes="76x76" href="{% static 'apple-icon-76x76.png' %}">
+        <link rel="apple-touch-icon" sizes="114x114" href="{% static 'apple-icon-114x114.png' %}">
+        <link rel="apple-touch-icon" sizes="120x120" href="{% static 'apple-icon-120x120.png' %}">
+        <link rel="apple-touch-icon" sizes="144x144" href="{% static 'apple-icon-144x144.png' %}">
+        <link rel="apple-touch-icon" sizes="152x152" href="{% static 'apple-icon-152x152.png' %}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{% static 'apple-icon-180x180.png' %}">
+
+        <link rel="icon" type="image/png" sizes="36x36" href="{% static 'android-icon-36x36.png' %}">
+        <link rel="icon" type="image/png" sizes="48x48" href="{% static 'android-icon-48x48.png' %}">
+        <link rel="icon" type="image/png" sizes="72x72" href="{% static 'android-icon-72x72.png' %}">
+        <link rel="icon" type="image/png" sizes="96x96" href="{% static 'android-icon-96x96.png' %}">
+        <link rel="icon" type="image/png" sizes="144x144" href="{% static 'android-icon-144x144.png' %}">
+        <link rel="icon" type="image/png" sizes="192x192" href="{% static 'android-icon-192x192.png' %}">
+        <link rel="icon" type="image/png" sizes="192x192" href="{% static 'android-chrome-192x192.png' %}">
+        <link rel="icon" type="image/png" sizes="512x512" href="{% static 'android-chrome-512x512.png' %}">
+
+        <meta name="msapplication-TileColor" content="#353535">
+        <meta name="msapplication-TileImage" content="{% static 'ms-icon-144x144.png' %}">
+        <meta name="msapplication-square70x70logo" content="{% static 'ms-icon-70x70.png' %}">
+        <meta name="msapplication-square150x150logo" content="{% static 'ms-icon-150x150.png' %}">
+        <meta name="msapplication-square310x310logo" content="{% static 'ms-icon-310x310.png' %}">
+
+        <link rel="manifest" href="{% static 'manifest.json' %}">
+        <meta name="application-name" content="Tank Crew Stats {{ VERSION }}">
+        <meta name="theme-color" content="#353535">
+
+    {% endif %}
+
+    <title>{% block title %}{% if SKIN_ID == 1 or SKIN_ID == 2 %}{{ server_name.title }} (IL2 stats){% elif SKIN_ID == 3 %}{{ server_name.title }} (Tank Crew Stats){% endif %}{% endblock title %}</title>
 
     <link href="{% static 'css/fonts.css' %}" rel="stylesheet">
 
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
-    <link href="{% static 'css/footer_coffee.css' %}" rel="stylesheet">
+{#    <link href="{% static 'css/footer_coffee.css' %}" rel="stylesheet">#}
     <link href="{% static 'css/collapsible_main.css' %}" rel="stylesheet">
     <script>
         var LANGUAGE_CODE = '{{ LANGUAGE_CODE }}';
@@ -74,11 +118,11 @@
             <div class="nav_sub_menu">
                 {% trans 'Rankings' %} &#x25BE;
                 <div class="nav_sub_menu_items">
+                    <a href="{% url 'stats:tankmans' %}?tour={{ request.tour.id }}">{% trans 'Tankman Rankings' %}</a>
                     <a href="{% url 'stats:pilots' %}?tour={{ request.tour.id }}">{% trans 'Pilot Rankings' %}</a>
                     {% if request.module_ironman and request.ironman_style == 'classic' %}
                     <a href="{% url 'stats:ironman' %}?tour={{ request.tour.id }}">{% trans 'Ironman Rankings' %}</a>
                     {% endif %}
-                    <a href="{% url 'stats:tankmans' %}?tour={{ request.tour.id }}">{% trans 'Tankman Rankings' %}</a>
                     {% if request.module_ironman and request.ironman_style == 'both' %}
                     <a href="{% url 'stats:ironman' %}?tour={{ request.tour.id }}&type=living">{% trans 'Ironman Rankings (Living Pilots)' %}</a>
                     <a href="{% url 'stats:ironman' %}?tour={{ request.tour.id }}&type=best">{% trans 'Ironman Rankings (Best streak) ' %}</a>
@@ -102,8 +146,8 @@
             {% if server_forum_url.content %}
                 <a href="{{ server_forum_url.content }}" target="_blank">{% trans 'Forum' %}</a>
             {% endif %}
-            <a href="{% url 'faq' %}">FAQ</a>
-            <a href="{% url 'info' %}">{% trans 'Info' %}</a>
+{#            <a href="{% url 'faq' %}">FAQ</a>#}
+{#            <a href="{% url 'info' %}">{% trans 'Info' %}</a>#}
         </div>
         <div class="nav_tour">
             {% trans 'Tour' %}:
@@ -144,19 +188,13 @@
     <div class="footer">
         <div class="wrapper">
             <div class="footer_il2_stats_logo">
-                {% if LANGUAGE_CODE == 'ru' %}
-                    <a href="https://github.com/Miramaksimus/Tank-Crew-Stats" target="_blank">
-                        <img src="{% static 'img/il2_stats_logo_sm.png' %}" width="53" height="36" alt="" title="">
-                    </a>
-                {% else %}
-                    <a href="https://forum.il2sturmovik.com/topic/19083-il2-stats" target="_blank">
-                        <img src="{% static 'img/il2_stats_logo_sm.png' %}" width="53" height="36" alt="" title="">
-                    </a>
-                {% endif %}
+                <a href="https://github.com/Miramaksimus/Tank-Crew-Stats" target="_blank">
+                    <img src="{% static 'img/il2_stats_logo_sm.png' %}" width="53" height="36" alt="" title="">
+                </a>
             </div>
             <div class="footer_left">
                 {% now 'Y' as current_year %}
-                Powered by <strong>IL2 <i>stats</i> {{ VERSION }}</strong>
+                Powered by <strong>Tank Crew<i> Stats</i> {{ VERSION }}</strong>
 {#                © 2015{% if current_year != '2015' %}-{{ current_year }}{% endif %} Some Name#}
                 <div class="footer_lang">
                     |

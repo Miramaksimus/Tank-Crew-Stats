@@ -24,7 +24,8 @@ pytz>=2024.1
 tzlocal>=5.0.0
 
 # Application server
-waitress>=2.1.0
+#waitress>=2.1.0
+gunicorn>=23.0.0
 
 # i18n
 django-rosetta>=0.9.8
