@@ -14,7 +14,8 @@ if __name__ == '__main__':
         '--bind', f'{HTTP_HOST}:{HTTP_PORT}',
         '--certfile', str(cert_path),
         '--keyfile', str(key_path),
-        '--workers', '4',
-        '--threads', '10',
+        '--workers', '1',
+        '--threads', '4',
+        '--timeout', '60',
         'core.wsgi:application'
     ])

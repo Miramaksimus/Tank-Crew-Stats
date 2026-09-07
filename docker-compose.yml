@@ -2,20 +2,52 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${DB_NAME:-il2_stats}
-      POSTGRES_USER: ${DB_USER:-il2_stats}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-il2_stats}
+    # PostgreSQL NO se publica al host: solo accesible desde la red interna Docker.
+    # Si necesitas un cliente externo, descomenta y limita a localhost:
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:?define DB_NAME en .env}
+      POSTGRES_USER: ${DB_USER:?define DB_USER en .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?define DB_PASSWORD en .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/10-extensions.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-il2_stats} -d ${DB_NAME:-il2_stats}"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
       timeout: 5s
       retries: 10
+    # --- Recursos MINIMOS (WSL2 = 1 solo hilo; se comparte con web/parser) ---
+    # cpu_shares reparte prioridad DENTRO del unico hilo disponible.
+    cpu_shares: 512          # BD: prioridad media (la web depende de ella)
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"        # techo = el unico hilo de WSL2
+          memory: 768M       # PostgreSQL ajustado, sobra para stats
+        reservations:
+          memory: 128M
+    security_opt:
+      - no-new-privileges:true
+    # PostgreSQL afinado para huella pequena de memoria.
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=30"
+      - "-c"
+      - "shared_buffers=128MB"
+      - "-c"
+      - "effective_cache_size=384MB"
+      - "-c"
+      - "work_mem=8MB"
+      - "-c"
+      - "maintenance_work_mem=48MB"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 
   web:
     build: .
@@ -26,30 +58,49 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-il2_stats}
-      DB_USER: ${DB_USER:-il2_stats}
-      DB_PASSWORD: ${DB_PASSWORD:-il2_stats}
-      SECRET_KEY: ${SECRET_KEY:-}
+      DB_NAME: ${DB_NAME:?define DB_NAME en .env}
+      DB_USER: ${DB_USER:?define DB_USER en .env}
+      DB_PASSWORD: ${DB_PASSWORD:?define DB_PASSWORD en .env}
+      SECRET_KEY: ${SECRET_KEY:?define SECRET_KEY en .env}
       RUN_SETUP: "1"
       DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME:-}
       DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD:-}
       DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL:-admin@example.com}
+      # 1 hilo -> Gunicorn con 1 worker y algunos threads (concurrencia I/O).
+      GUNICORN_WORKERS: "1"
+      GUNICORN_THREADS: "4"
+      GUNICORN_TIMEOUT: "60"
+    # Solo escucha en localhost -> Nginx hace de proxy.
     ports:
       - "${HTTP_PORT:-8077}:8077"
     volumes:
       - static:/app/static
       - media:/app/media
-#      - ./src:/app/src
     healthcheck:
       test: ["CMD-SHELL", "curl -f -k https://localhost:8077/ || exit 1"]
-      interval: 15s
+      interval: 20s
       timeout: 5s
       retries: 5
       start_period: 40s
+    # --- Recursos MINIMOS: prioridad ALTA dentro del hilo (es lo que ve el usuario) ---
+    cpu_shares: 1024         # maxima prioridad relativa entre los contenedores
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G         # Django/Gunicorn con 1 worker basta
+        reservations:
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 
-  # Optional: mission-log parser. It reads the IL-2 dedicated server logs and
-  # writes stats into the same database. Mount your server directory below.
-  # Start it with:  docker compose --profile parser up -d
+  # Parser opcional y BATCH. Arráncalo SOLO cuando no haya partida:
+  #   docker compose --profile parser up -d
   parser:
     build: .
     restart: unless-stopped
@@ -60,18 +111,31 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-il2_stats}
-      DB_USER: ${DB_USER:-il2_stats}
-      DB_PASSWORD: ${DB_PASSWORD:-il2_stats}
-      SECRET_KEY: ${SECRET_KEY:-}
+      DB_NAME: ${DB_NAME:?define DB_NAME en .env}
+      DB_USER: ${DB_USER:?define DB_USER en .env}
+      DB_PASSWORD: ${DB_PASSWORD:?define DB_PASSWORD en .env}
+      SECRET_KEY: ${SECRET_KEY:?define SECRET_KEY en .env}
       RUN_SETUP: "0"
     command: ["python", "manage.py", "stats_whore"]
     volumes:
       - media:/app/media
-      # Mount your IL-2 dedicated server folder (contains data/<text_log_folder>).
-      # Must be read-write: the parser moves processed logs into
-      # data/<text_log_folder>/mission_report_backup/.
       - ${IL2_SERVER_PATH:-./il2server}:/il2server
+    # --- Recursos MINIMOS: prioridad MAS BAJA (cede a web y db) ---
+    cpu_shares: 128
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          memory: 128M
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 
 volumes:
   pgdata:
